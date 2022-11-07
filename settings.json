@@ -1,0 +1,38 @@
+{
+  "workbench.iconTheme": "material-icon-theme",
+  "[typescript]": {
+    "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+  },
+  "security.workspace.trust.untrustedFiles": "open",
+  "[vue]": {
+    "editor.defaultFormatter": "octref.vetur"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "vscode-edge-devtools.mirrorEdits": true,
+  "prettier.configPath": ".prettierrc",
+  "editor.rulers": [120],
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "editor.codeActionsOnSave": {
+    // For ESLint
+    "source.fixAll.eslint": true
+  },
+  "editor.tabSize": 2,
+  "window.zoomLevel": 1,
+  "editor.foldingMaximumRegions": 65000,
+  "debug.javascript.autoAttachFilter": "disabled",
+  "editor.formatOnSave": true,
+  "rejectUnauthorized": false
+}
