@@ -9,19 +9,17 @@ import { getExpirationDate } from '~/utils/Token/token';
 import { WorklogFilter, Worklog, WorklogResults } from '~/utils/Tempo/tempo.enum';
 import { TokenAccess, GrantType } from '~/utils/Token/token.enum';
 
-const clientId = 'pBa4KBL5dIJINIB3jz3oc8TsjtUo1BNjDW3nE7xu';
-const clientSecret = 'LUs0L2n9aixlVfAcDVUNPejJ5bBH6FLwtfF8hp4X9WXyROhX4NS83P7SXTl6BhgsaEioWQeIgIoOi6j8y4OuRJPk6G67vB5iVcRfWgXMxmX311Tso0Zfrur1VqVA3MS2';
-const redirectUri = 'http://localhost';
-const apiUrl = 'https://api.tempo.io';
-const code = 'Nam7ZWCtU1OhsZWmOBky89RjPIA6Tz'
+const clientId = process.env.TEMPO_CLIENT_ID || 'pBa4KBL5dIJINIB3jz3oc8TsjtUo1BNjDW3nE7xu';
+const clientSecret = process.env.TEMPO_CLIENT_SECRET || 'LUs0L2n9aixlVfAcDVUNPejJ5bBH6FLwtfF8hp4X9WXyROhX4NS83P7SXTl6BhgsaEioWQeIgIoOi6j8y4OuRJPk6G67vB5iVcRfWgXMxmX311Tso0Zfrur1VqVA3MS2';
+const redirectUri = process.env.TEMPO_REDIRECT_URI || 'http://localhost';
+const apiUrl = process.env.TEMPO_API_URL || 'https://api.tempo.io';
 
+const code = 'Nam7ZWCtU1OhsZWmOBky89RjPIA6Tz';
 let tempoAccess: TokenAccess = {
   token: 'yTsN5SBIEwaqtoZn5GOHd1GDT5Fbaj',
-  expiresIn: 1667857502,
+  expiresIn: 1667943902,
   refreshToken: 'O9hVAacYuJAJ8s6cxtb0SCNvauYoat'
 };
-
-// https://xoor.atlassian.net/plugins/servlet/ac/io.tempo.jira/oauth-authorize/?client_id=pBa4KBL5dIJINIB3jz3oc8TsjtUo1BNjDW3nE7xu&redirect_uri=http://localhost
 
 // 17:32
 // {
