@@ -4,10 +4,14 @@ import qs from 'querystring';
 // Utils
 import { getAccountIdByEmail } from '~/utils/Jira/jira';
 import { getExpirationDate } from '~/utils/Token/token';
+import { Logger } from '~/utils/logger';
 
 // Enums
 import { WorklogFilter, Worklog, WorklogResults } from '~/utils/Tempo/tempo.enum';
 import { TokenAccess, GrantType } from '~/utils/Token/token.enum';
+
+// Errors
+import { TempoError } from '~/utils/Tempo/tempo.error';
 
 const clientId = process.env.TEMPO_CLIENT_ID || 'pBa4KBL5dIJINIB3jz3oc8TsjtUo1BNjDW3nE7xu';
 const clientSecret = process.env.TEMPO_CLIENT_SECRET || 'LUs0L2n9aixlVfAcDVUNPejJ5bBH6FLwtfF8hp4X9WXyROhX4NS83P7SXTl6BhgsaEioWQeIgIoOi6j8y4OuRJPk6G67vB5iVcRfWgXMxmX311Tso0Zfrur1VqVA3MS2';
@@ -17,9 +21,12 @@ const apiUrl = process.env.TEMPO_API_URL || 'https://api.tempo.io';
 const code = 'Nam7ZWCtU1OhsZWmOBky89RjPIA6Tz';
 let tempoAccess: TokenAccess = {
   token: 'yTsN5SBIEwaqtoZn5GOHd1GDT5Fbaj',
-  expiresIn: 1667943902,
+  expiresIn: 1668030302,
   refreshToken: 'O9hVAacYuJAJ8s6cxtb0SCNvauYoat'
 };
+
+const serviceName = 'Tempo';
+const logger = new Logger(serviceName);
 
 // 17:32
 // {
@@ -30,18 +37,25 @@ let tempoAccess: TokenAccess = {
 //   refresh_token: 'O9hVAacYuJAJ8s6cxtb0SCNvauYoat'
 // }
 
-const retrieveToken = async(): Promise<string | undefined> => {
+/**
+ * Validate if exists an access token and if it isn't expired. Returns an available access token
+ */
+const retrieveToken = async(): Promise<string> => {
   try {
     if (!tempoAccess) return await getToken();
     if (Date.now() > tempoAccess.expiresIn) return tempoAccess.token;
     return await refreshToken();
-  } catch(error) {
-    console.log(error);
-    return;
+  } catch(error: any) {
+    if (error instanceof Error) throw new Error(error.message);
+    logger.error(`[retrieveToken] ${error.message}`, error);
+    throw new Error(TempoError.ERROR_ON_RETRIEVE_TOKEN);
   }
 }
 
-const getToken = async(): Promise<string | undefined> => {
+/**
+ * Get a new access token for tempo API
+ */
+const getToken = async(): Promise<string> => {
   try {
     const params = qs.stringify({
       grant_type: GrantType.AUTHORIZATION_CODE,
@@ -61,7 +75,6 @@ const getToken = async(): Promise<string | undefined> => {
 
     const response = await axios(config);
     const { data } = response;
-    console.log(data)
 
     tempoAccess = {
       token: data.access_token,
@@ -70,13 +83,17 @@ const getToken = async(): Promise<string | undefined> => {
     }
     return tempoAccess.token;
 
-  } catch(error) {
-    console.log(error);
-    return;
+  } catch(error: any) {
+    if (error instanceof Error) throw new Error(error.message);
+    logger.error(`[getToken] ${error.message}`, error);
+    throw new Error(TempoError.ERROR_ON_GET_TOKEN);
   }
 }
 
-const refreshToken = async(): Promise<string | undefined> => {
+/**
+ * Get a new access token for tempo API by its refresh one
+ */
+const refreshToken = async(): Promise<string> => {
   try {
     const params = qs.stringify({
       grant_type: GrantType.REFRESH_TOKEN,
@@ -102,59 +119,83 @@ const refreshToken = async(): Promise<string | undefined> => {
     tempoAccess.refreshToken = data.refresh_token;
     return tempoAccess.token;
 
-  } catch(error) {
-    console.log(error);
-    return;
+  } catch(error: any) {
+    if (error instanceof Error) throw new Error(error.message);
+    logger.error(`[refreshToken] ${error.message}`, error);
+    throw new Error(TempoError.ERROR_ON_REFRESH_TOKEN);
   }
 }
 
-const getWorklogForUserId = async(accountId: string, filterBy?: WorklogFilter): Promise<WorklogResults[] | undefined> => {
+/**
+ * Get limited worklogs of a user in a date range
+ * @param accountId       Jira user accountId
+ * @param filterBy        Filter to apply
+ */
+const getWorklogForUser = async(accountId: string, filterBy: WorklogFilter): Promise<Worklog> => {
   try {
-    const filter = qs.stringify(filterBy as WorklogFilter&{ [index: string]: string });
     const token = await retrieveToken();
+    const filter = qs.stringify(filterBy as WorklogFilter&{ [index: string]: string });
     const response = await axios.get(`${apiUrl}/4/worklogs/user/${accountId}?${filter}`, { 
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
     const data: Worklog = response.data;
-    return data.results;
-  } catch(error) {
-    console.log(error);
-    return;
+    return data;
+  } catch(error: any) {
+    if (error instanceof Error) throw new Error(error.message);
+    logger.error(`[getWorklogForUser] ${error.message}`, error);
+    throw new Error(TempoError.ERROR_GETTING_WORKLOG_FOR_USER);
   }
 }
 
-// TODO agregar recuperar más registros en caso de tener más de 50
-const getWorklogForUser = async(email: string, filterBy?: WorklogFilter): Promise<WorklogResults[]> => {
+/**
+ * Get worklogs of a user in a date range, if it has more than one page, get all pages
+ * the offset parameter
+ * @param email           Email of the user
+ * @param filterBy        Filter to apply (date range)
+ */
+const retrieveWorklogForUser = async(email: string, filterBy: WorklogFilter): Promise<WorklogResults[]> => {
   try {
     const accountId = await getAccountIdByEmail(email);
-    const token = await retrieveToken();
-    const filter = qs.stringify(filterBy as WorklogFilter&{ [index: string]: string });
-    const response = await axios.get(`${apiUrl}/4/worklogs/user/${accountId}?${filter}`, { 
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    const data: Worklog = response.data;
-    return data.results;
-  } catch(error) {
-    console.log(error);
-    throw new Error('Error on getWorklogForUser');
+    let worklog: Worklog = await getWorklogForUser(accountId, filterBy);
+    let newWorklog: WorklogResults[] = [...worklog.results];
+    filterBy.offset = 0;
+
+    // If has more pages
+    while (worklog.metadata.count > 0 && worklog.metadata.count === worklog.metadata.limit) {
+      const newOffset: number = filterBy.offset! + worklog.metadata.limit;
+      filterBy.offset = newOffset;
+      worklog = await getWorklogForUser(accountId, filterBy);
+      newWorklog.push(...worklog.results);
+    }
+    return newWorklog;
+    
+  } catch(error: any) {
+    if (error instanceof Error) throw new Error(error.message);
+    logger.error(`[retrieveWorklogForUser] ${error.message}`, error);
+    throw new Error(TempoError.ERROR_ON_RETRIEVE_WORKLOG_FOR_USER);
   }
 }
 
-export const calculateWorkedHours = async(email: string, filterBy?: WorklogFilter) => {
+/**
+ * Calculates the total of billable hours of a user in a date range
+ * @param email           Email of the user
+ * @param filterBy        Filter to apply
+ * @returns 
+ */
+export const calculateWorkedHours = async(email: string, filterBy: WorklogFilter) => {
   try {
-    const worklog: WorklogResults[] = await getWorklogForUser(email, filterBy);
+    const worklog: WorklogResults[] = await retrieveWorklogForUser(email, filterBy);
     const workedSeconds = worklog.reduce(
       (previousValue, currentValue) => previousValue + currentValue.billableSeconds,
       0,
     );
     const workedHours = (workedSeconds / 3600).toFixed(2);
     return workedHours;
-  } catch(error) {
-    console.log(error);
-    return;
+  } catch(error: any) {
+    if (error instanceof Error) throw new Error(error.message);
+    logger.error(`[calculateWorkedHours] ${error.message}`, error);
+    throw new Error(TempoError.ERROR_ON_CALCULATE_WORKED_HOURS);
   }
 }

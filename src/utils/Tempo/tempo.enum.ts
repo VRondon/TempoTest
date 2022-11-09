@@ -2,6 +2,7 @@
 export interface WorklogFilter {
   from: string; //'2022-11-01',
   to: string; //'2022-11-02'
+  offset?: number;
 }
 
 export interface Worklog {

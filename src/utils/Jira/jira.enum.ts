@@ -27,3 +27,11 @@ export interface User {
     }]
   }
 }
+
+export interface TokenScope {
+  id: string;
+  url: string;
+  name: string;
+  scopes: string[];
+  avatarUrl: string;
+}

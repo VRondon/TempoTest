@@ -15,11 +15,16 @@ import { GetBillableHoursInput } from './input';
 export class UserQueryResolver {
   @Query(() => Number)
   public async getBillableHoursByEmail(@Arg('input') input: GetBillableHoursInput) {
-    const filter = {
-      from: input.from,
-      to: input.to,
+    try {
+      const filter = {
+        from: input.from,
+        to: input.to,
+      }
+      const workedHours = await calculateWorkedHours(input.email, filter);
+      return workedHours;
+    } catch(error: any) {
+      if (error instanceof Error) throw new Error(error.message);
+      throw new Error('Error on getBillableHoursByEmail');
     }
-    const workedHours = await calculateWorkedHours(input.email, filter);
-    return workedHours;
   }
 }
